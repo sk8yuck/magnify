@@ -938,7 +938,7 @@ Magnify.prototype = {
       // Remove class must when image setting end
       this.$stage.removeClass('stage-ready');
       this.$image.removeClass('image-ready');
-  
+
       // Add image init animation
       if (this.options.initAnimation && !this.options.progressiveLoading) {
         $image.fadeIn();
@@ -1420,6 +1420,50 @@ Magnify.prototype = {
       self.wheel(e);
     });
 
+    this.$stage.off(TOUCH_START_EVENT + EVENT_NS).on(TOUCH_START_EVENT + EVENT_NS,function(e){
+      var oe = e.originalEvent;
+      if(oe.targetTouches.length == 2){
+        var newDist = Math.hypot(
+          oe.targetTouches[0].pageX - oe.targetTouches[1].pageX,
+          oe.targetTouches[0].pageY - oe.targetTouches[1].pageY
+        );
+        self.dist = newDist
+      }
+    });
+
+    this.$stage.off(TOUCH_END_EVENT + EVENT_NS).on(TOUCH_END_EVENT + EVENT_NS,function(e){
+      var oe = e.originalEvent;
+      if(oe.targetTouches.length == 2){
+        self.dist = null
+      }
+    });
+
+    this.$stage.off(TOUCH_MOVE_EVENT + EVENT_NS).on(TOUCH_MOVE_EVENT + EVENT_NS,function(e){
+      var oe = e.originalEvent;
+      if(oe.targetTouches.length == 2){
+        var newDist = Math.hypot(
+          oe.targetTouches[0].pageX - oe.targetTouches[1].pageX,
+          oe.targetTouches[0].pageY - oe.targetTouches[1].pageY
+        );
+        if(Math.abs(newDist - self.dist) > 1.5){
+          if(newDist<self.dist){
+            self.zoom(
+              -self.options.ratioThreshold / 2,
+              { x: self.$stage.width() / 2, y: self.$stage.height() / 2 },
+              e
+            );
+          }else{
+            self.zoom(
+              self.options.ratioThreshold / 2,
+              { x: self.$stage.width() / 2, y: self.$stage.height() / 2 },
+              e
+            );
+          }
+          self.dist = newDist
+        }
+      }
+    });
+
     this.$zoomIn.off(CLICK_EVENT + EVENT_NS).on(CLICK_EVENT + EVENT_NS, function (e) {
       self.zoom(
         self.options.ratioThreshold * 3,
@@ -1473,7 +1517,6 @@ Magnify.prototype = {
     });
 
     $W.on(RESIZE_EVENT + EVENT_NS, self.resize());
-
   },
   _triggerHook: function (e, data) {
     if (this.options.callbacks[e]) {
@@ -2165,7 +2208,7 @@ var resizable = function (modal, stage, image, minWidth, minHeight) {
     // Set grab cursor
     if (PUBLIC_VARS['isResizing']) {
       setGrabCursor(
-        { w: imgWidth, h: imgHeight }, 
+        { w: imgWidth, h: imgHeight },
         { w: $(stage).width(), h: $(stage).height() },
         stage
       );
@@ -2176,7 +2219,7 @@ var resizable = function (modal, stage, image, minWidth, minHeight) {
 
     // Remove resizable cursor
     $('html,body,.magnify-modal,.magnify-stage,.magnify-button').css('cursor', '');
-    
+
     // Update image initial data
     var scale = self.getImageScaleToStage(
       $(stage).width(),
